@@ -2,11 +2,11 @@ module Main (
     main
 ) where
 
-import Day06
+import Day07
 
 main :: IO ()
 main = do
-    printOneDay 6 part1 part2
+    printOneDay dayNo part1 part2
 
 printOneDay :: Int -> IO () -> IO () -> IO ()
 printOneDay n part1 part2 = do
