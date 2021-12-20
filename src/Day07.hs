@@ -44,19 +44,20 @@ solvePart_1 :: Solution
 solvePart_1 (Input i) =
   sum . map (part1Cost bestPosition) $ i
   where 
-    bestPosition = part1BestPosition i
+    bestPosition = median i
 
 solvePart_2 :: Solution
 solvePart_2 (Input i) = 
-  -- brute force solution of checking all positions
-  minimum . map (\bestPosition -> sum . map (part2Cost bestPosition) $ i) $ position
+  sum . map (part2Cost bestPosition) $ i
   where 
-    position = [0..(maximum i)]
+    bestPosition = average i
 
 {- Supplementary functions -}
 
-part1BestPosition :: [Position] -> Position
-part1BestPosition ps =
+-- in our case doesn't really metter to take element on left or right 
+-- when number is even
+median :: [Position] -> Position
+median ps =
   sorted !! middle
   where
     sorted = DL.sort ps
@@ -64,14 +65,17 @@ part1BestPosition ps =
   
 part1Cost :: Position -> Position -> Int
 part1Cost p1 p2 = abs (p1 - p2)
-  
-part2BestPosition :: [Position] -> Position
-part2BestPosition ps =
+
+-- for some reason besto positions is not an arithmetically rounded average
+-- but truncated average number :-(  
+average :: [Position] -> Position
+average ps =
   d + a
   where 
     l = length ps
     (d,r) = (sum ps) `divMod` l
-    a = if (r * 2) >= l then 1 else 0
+    --a = if (r * 2) >= l then 1 else 0
+    a = 0
 
 part2Cost :: Position -> Position -> Int
 part2Cost p1 p2 = 
