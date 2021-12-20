@@ -73,7 +73,7 @@ average ps =
   d + a
   where 
     l = length ps
-    (d,r) = (sum ps) `divMod` l
+    (d,r) = sum ps `divMod` l
     --a = if (r * 2) >= l then 1 else 0
     a = 0
 
