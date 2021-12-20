@@ -31,8 +31,7 @@ type FishCount = Int
 type Population = M.Map LanternFishBirthEpoch FishCount
 
 firstCycleAddon = 2 :: Int
-cycleDuration = 7
-epochs = [1..80] :: [Int]
+cycleDuration = 7 :: Int
 
 newtype Input = Input Population
 
@@ -50,11 +49,14 @@ parseInput xs =
 solvePart_1 :: Solution
 solvePart_1 (Input i) =
   M.foldl (+) 0 . foldl createFish i $ epochs
+  where 
+    epochs = [1..80] :: [Int]
+
 
 -- check population and find those generations that are ready to create
 -- count number of fish of those generations and add new generation of this size
 createFish :: Population -> Epoch -> Population
-createFish population epoch = M.insert epoch newborns population
+createFish population epoch = M.insert (epoch - 1) newborns population
   where
     newborns = M.foldl (+) 0 generations
     generations = M.filterWithKey (\k _ -> ageToCreate epoch k) population
@@ -67,4 +69,7 @@ ageToCreate e b =
     condition2 = e - b - firstCycleAddon > 1
 
 solvePart_2 :: Solution
-solvePart_2 (Input i) = 2
+solvePart_2 (Input i) = 
+  M.foldl (+) 0 . foldl createFish i $ epochs
+  where 
+    epochs = [1..256] :: [Int]
