@@ -60,8 +60,7 @@ solvePart_1 (Input i) =
 
 solvePart_2 :: Solution
 solvePart_2 (Input i) =
-  error "not implemented"
-
+  sum . map (\x -> decode (display x) (determine . signals $ x)) $ i
 
 determine :: [Signal] -> Determinant
 determine signals =
