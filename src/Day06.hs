@@ -5,6 +5,7 @@ module Day06 (
 
 import qualified Lib as L
 import Data.Text (unpack, pack, splitOn)
+import qualified Data.Map as M
 
 dayN = 6
 type Answer = Int
@@ -26,34 +27,44 @@ part2 = printPartN solvePart_2
 
 type Epoch = Int
 type LanternFishBirthEpoch = Epoch
-type Population = [LanternFishBirthEpoch]
+type FishCount = Int
+type Population = M.Map LanternFishBirthEpoch FishCount
 
 firstCycleAddon = 2 :: Int
 cycleDuration = 7
-epochs = [0..80] :: [Int]
+epochs = [1..80] :: [Int]
 
 newtype Input = Input Population
 
 {- Solutions -}
 
 parseInput :: [String] -> Input
-parseInput xs = Input pop
+parseInput xs =
+  Input (foldl (\z e -> M.insertWith (+) e 1 z) M.empty epochs)
   where
-    pop = map (read . unpack) . splitOn del . pack $ head xs
     del = pack ","
+    timers = map (read . unpack) . splitOn del . pack $ head xs
+    epochs = map (\x -> x - cycleDuration - firstCycleAddon) timers
 
 
 solvePart_1 :: Solution
 solvePart_1 (Input i) =
-  length . foldl createFish i $ epochs
+  M.foldl (+) 0 . foldl createFish i $ epochs
 
+-- check population and find those generations that are ready to create
+-- count number of fish of those generations and add new generation of this size
 createFish :: Population -> Epoch -> Population
-createFish population epoch = population ++ newBorn
+createFish population epoch = M.insert epoch newborns population
   where
-    newBorn = map (const epoch) . filter (ageToCreate epoch) $ population
+    newborns = M.foldl (+) 0 generations
+    generations = M.filterWithKey (\k _ -> ageToCreate epoch k) population
 
 ageToCreate :: Epoch -> LanternFishBirthEpoch -> Bool
-ageToCreate c b = (c - b - firstCycleAddon) `rem` cycleDuration == 0
+ageToCreate e b =
+  condition1 && condition2
+  where
+    condition1 = (e - b - firstCycleAddon) `rem` cycleDuration == 1
+    condition2 = e - b - firstCycleAddon > 1
 
 solvePart_2 :: Solution
 solvePart_2 (Input i) = 2
