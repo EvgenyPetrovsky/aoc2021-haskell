@@ -2,7 +2,7 @@ module Main (
     main
 ) where
 
-import Day10
+import Day11
 
 main :: IO ()
 main = do
