@@ -88,9 +88,9 @@ searchPath :: Path -> [Connection] -> Validation -> [Path]
 searchPath (End:rest) _ _ = [End:rest]
 searchPath path connections validate =
   -- search new paths for every path + valid next points
-  concat .
-    map (\p -> searchPath p connections validate) .
-    map (\ (_,b) -> b:path) $
+  concatMap
+    ((\ p -> searchPath p connections validate)
+       . (\ (_, b) -> b : path))
     valid_connections
   where
     current_point = head path
