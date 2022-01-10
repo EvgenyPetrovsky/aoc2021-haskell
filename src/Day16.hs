@@ -35,10 +35,11 @@ data Bit = B0 | B1 deriving (Show, Eq, Ord)
 data Type = TL | TO deriving (Show, Eq, Ord)
 data LengthTypeID = I0 | I1 deriving (Show, Eq, Ord)
 data Length = Subpackets Int | Subsequence Int deriving (Show, Eq, Ord)
-
+data PacketFun = FSum | FProd | FMin | FMax | FGt | FLt | FEq | FUnknown
+  deriving (Show, Eq, Ord)
 data Packet =
   Li { version :: Int, type_id :: Int, value :: Int } |
-  Op { version :: Int, type_id :: Int, subpackets :: [Packet] }
+  Op { version :: Int, type_id :: Int, subpackets :: [Packet], fun :: PacketFun }
   deriving (Eq, Show)
 
 {- Solutions -}
@@ -57,7 +58,12 @@ solvePart_1 (Input i) =
 
 solvePart_2 :: Solution
 solvePart_2 (Input i) =
-  error "not implemented"
+  calculate . fst . parsePacket $ i
+  where
+    calculate :: Packet -> Int
+    calculate Li {value = x} = x
+    calculate Op {fun = pf, subpackets = ps} = opFun pf $ map calculate ps
+
 
 {- Supplementary functions -}
 
@@ -82,7 +88,7 @@ parsePacket :: BitString -> (Packet, BitString)
 parsePacket bs =
     case t of
       TL -> (Li {version = v, type_id = t_id, value = li_val}, rb_Li)
-      TO -> (Op {version = v, type_id = t_id, subpackets = subps}, rb_Op)
+      TO -> (Op {version = v, type_id = t_id, subpackets = subps, fun = f}, rb_Op)
   where
     -- version
     (b_V,rb_V) = splitAt 3 bs
@@ -93,6 +99,16 @@ parsePacket bs =
     t = case t_id of
       4 -> TL
       _ -> TO
+    f = case t_id of
+      0 -> FSum
+      1 -> FProd
+      2 -> FMin
+      3 -> FMax
+      5 -> FGt
+      6 -> FLt
+      7 -> FEq
+      _ -> FUnknown
+
     -- literal value
     (li_val, rb_Li) =
       case t of
@@ -153,3 +169,13 @@ parseLiteral bs =
       case h of
         B0 -> (acc ++ take 4 tl, drop 4 tl)
         B1 -> iter (acc ++ take 4 tl) (drop 4 tl)
+
+-- operator functions
+opFun :: PacketFun -> ([Int] -> Int)
+opFun FSum = sum
+opFun FProd = product
+opFun FMin = minimum
+opFun FMax = maximum
+opFun FGt = \ (a:b:_) -> if a > b then 1 else 0
+opFun FLt = \ (a:b:_) -> if a < b then 1 else 0
+opFun FEq = \ (a:b:_) -> if a == b then 1 else 0
