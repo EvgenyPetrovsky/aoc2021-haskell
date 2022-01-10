@@ -2,10 +2,12 @@ module DayXX_template (
   dayNo,
   part1,
   part2
-  
+
 ) where
 
-import qualified Lib as L
+import qualified Lib
+--import qualified Data.List as L
+--import qualified Data.Map as M
 
 dayNo = 00
 
@@ -14,7 +16,7 @@ type Solution = (Input -> Answer)
 
 printPartN :: Solution -> IO ()
 printPartN solution = do
-  input <- L.loadFile dayNo
+  input <- Lib.loadFile dayNo
   let answer = solution . parseInput $ input
   putStr . show $ answer
 
@@ -39,7 +41,7 @@ solvePart_1 (Input i) =
   error "not implemented"
 
 solvePart_2 :: Solution
-solvePart_2 (Input i) = 
+solvePart_2 (Input i) =
   error "not implemented"
 
 {- Supplementary functions -}
