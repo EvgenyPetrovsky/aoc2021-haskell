@@ -28,13 +28,17 @@ part2 = printPartN solvePart_2
 {- Define data types -}
 
 newtype Input = Input Area
-data Area = Area { x :: (Int, Int), y :: (Int, Int) }
+type Ordinate = Int
+data Position = Position { xP :: Ordinate, yP :: Ordinate } deriving (Show, Eq)
+type Trajectory = [Position]
+data Speed = Speed {xS :: Ordinate, yS :: Ordinate} deriving (Show, Eq)
+data Area = Area { xR :: (Ordinate, Ordinate), yR :: (Ordinate, Ordinate) } deriving (Show, Eq)
 
 {- Solutions -}
 
 parseInput :: [String] -> Input
 parseInput _ =
-  Input (Area {x = (79,137), y = (-176,-117)})
+  Input ( Area { xR = (79, 137), yR = (-176,-117) } )
 
 {-
   it is important that
@@ -45,25 +49,71 @@ parseInput _ =
 
 -}
 solvePart_1 :: Solution
-solvePart_1 (Input i) =
+solvePart_1 (Input area) =
   height speed_at_0_level
   where
-    min_y = negate $ uncurry min (y i)
+    min_y = negate $ uncurry min (yR area)
     speed_at_0_level = min_y - 1
     height :: Int -> Int
     height speed = if speed < 1 then 0 else speed + height (speed - 1)
 
 {-
-  Find all initial x speeds that lead to visit of target area,
-  those are between 0 and max (x)
-  Find all initial y speeds that lead to visit of target area,
-  those are between - abs (min y) and abs (min y)
-  make a product of them and count them
-  ...
-  not that easy - need to simulate the trajectory and know step and position
+  find all speeds that produce trajectories that hit target area.
+  use some guessing about speed ranges: 
+    x is between 0 and max of Target Area x
+    y is between - max abs y and + max abs y
+  just build trajectories for product and pick those where any of positions belongs to target area
 -}
 solvePart_2 :: Solution
-solvePart_2 (Input i) =
-  error "not implemented"
+solvePart_2 (Input area) =
+  length . filter (\s -> speedHitsTarget s area) $ speeds
+  where 
+    speeds = [Speed { xS = xs, yS = ys} | xs <- [0..max_x], ys <- [(negate max_y)..max_y]]
+    max_x = max (fst . xR $ area) (snd . xR $ area)
+    max_y = max (abs . fst . yR $ area) (abs . snd . yR $ area)
+
+
+speedHitsTarget :: Speed -> Area -> Bool
+speedHitsTarget s a = 
+  any pointBelongsToArea t
+  where 
+    t = takeWhile (\p -> (yP p) >= y_min) $ trajectory s
+    (x_min, x_max) = xR a
+    (y_min, y_max) = yR a
+    pointBelongsToArea :: Position -> Bool
+    pointBelongsToArea Position {xP = x, yP = y} = 
+      x_min <= x && x <= x_max && y_min <= y && y <= y_max
+      
+
 
 {- Supplementary functions -}
+
+type Time = Int
+
+trajectory :: Speed -> [Position]
+trajectory initial_speed =
+  zipWith speed_fun xs ys
+  where
+    speed_fun = \ x y -> Position { xP = x, yP = y }
+    xs = xTrajectory initial_speed
+    ys = yTrajectory initial_speed
+
+xPosition :: Time -> Speed -> Ordinate
+xPosition t s = xTrajectory s !! t
+
+yPosition :: Time -> Speed -> Ordinate
+yPosition t s = yTrajectory s !! t
+
+xTrajectory :: Speed -> [Ordinate]
+xTrajectory Speed { xS = initial_x_speed } = 
+  scanl (+) initial_position speeds
+  where 
+    initial_position = 0
+    speeds = reverse [0..initial_x_speed] ++ repeat 0
+
+yTrajectory :: Speed -> [Ordinate]
+yTrajectory Speed { yS = initial_y_speed } = 
+  scanl (+) initial_position speeds
+  where 
+    initial_position = 0
+    speeds = [initial_y_speed, (initial_y_speed - 1)..]
