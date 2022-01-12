@@ -55,9 +55,19 @@ splitOnSameLevel c s =
       | s == ']' = iter c ss (level-1) (acc+1)
       | otherwise = iter c ss level (acc+1)
 
+showNumber :: Number -> String
+showNumber (Leaf n) = show n
+showNumber (Fork l r) = "[" ++ showNumber l ++ "," ++ showNumber r ++ "]"
+
 solvePart_1 :: Solution
-solvePart_1 (Input i) =
-  error "not implemented"
+solvePart_1 (Input numbers) =
+  magnitude new_number
+  where
+    new_number = foldl1 (\z x -> reduce (add z x)) numbers
+
+magnitude :: Number -> Int
+magnitude (Leaf n) = n
+magnitude (Fork l r) = (3 * magnitude l) + (2 * magnitude r)
 
 solvePart_2 :: Solution
 solvePart_2 (Input i) =
@@ -68,52 +78,94 @@ solvePart_2 (Input i) =
 data Number = Fork Number Number | Leaf Int
   deriving (Show, Eq)
 
-data Explosion = Expolosion ExParticle | NoExplosion
+data Explosion = Explosion ExParticle | NoExplosion
+  deriving (Eq, Show)
+
 data ExParticle = NPart | LPart Int | RPart Int
+  deriving (Eq, Show)
+
 
 add :: Number -> Number -> Number
-add p1 p2 = Fork p1 p2
+add = Fork
 
 {- reduce is a combination of explode and split operations -}
 reduce :: Number -> Number
-reduce = error "not implemented"
-
-addParticle :: Number -> ExParticle -> Number
-addParticle (Leaf n) p =
-  case p of
-    LPart x -> Leaf (n + x)
-    RPart x -> Leaf (n + x)
-    NPart -> Leaf n
-addParticle (Fork l r) p =
-  case p of
-    LPart x -> Fork l (addParticle r p)
-    RPart x -> Fork (addParticle l p) r
-    NPart -> Fork l r
+reduce n =
+  if n == n_new then n else reduce n_new
+  where n_new = split . explode $ n
 
 explode :: Number -> Number
-explode = error "not implemented"
+explode n = new_n
+  where
+  (new_n,_) = explode' 1 n NoExplosion
 
-{-
-explode' :: Int -> Number -> ExParticle -> (Number, Explosion)
--- if there is a particle
-explode' level (Leaf n) p =
+explode' :: Int -> Number -> Explosion -> (Number, Explosion)
+
+-- on the level of exact numbers we either add explosion part or do nothing
+explode' _ (Leaf n) p =
   case p of
-    NPart -> (Leaf n, NoExplosion)
-    LPart x -> (Leaf (n + x), Expolosion { l = NPart, r = NPart } )
-    RPart x -> (Leaf (n + x), Expolosion { l = NPart, r = NPart } )
-explode' level (Fork l r) NPart =
-  if (isForkOfLeafs l) && level >= 4
-  then (Fork (Leaf 0) (addParticle r RPart n1), Explosion LPart n1)
-      else
-    (Leaf l1, Leaf r1) -> if level >= 4 then (Fork l r, Explosion LPart l1 RPart r1)
-    (Fork l1 r1, _) ->
-      case (el,er) of
-        (Explosion lparticle rparticle,_) -> (Fork l2 (fst $ explode' 0 r1 particle)
-        (Explosion particle _,_) -> Fork l2 (explode' 0 r1 particle)
-        where
-          (l2, el) = explode' (level + 1) l1 NPart
-          (r2, er) = explode' (level + 1) r1 NPart
--}
+    NoExplosion -> (Leaf n, NoExplosion)
+    Explosion NPart -> (Leaf n, Explosion NPart)
+    Explosion (LPart x) -> (Leaf (n + x), Explosion NPart )
+    Explosion (RPart x) -> (Leaf (n + x), Explosion NPart )
+
+-- if explosion has happened and we know what part to allocate
+-- then we give it to respective side of fork
+-- do not analyse anything in depths - the task is allocation
+explode' level (Fork l r) (Explosion p) =
+  case p of
+    (LPart _) -> (Fork l new_r, new_r_p)
+    (RPart _) -> (Fork new_l r, new_l_p)
+    _ -> (Fork l r, Explosion p)
+  where
+    (new_l, new_l_p) = explode' (level+1) l (Explosion p)
+    (new_r, new_r_p) = explode' (level+1) r (Explosion p)
+
+-- if explosion did not yet happen
+-- then we need to check whether left part is pair of Regular Numbers and their level >=4 (current level >= 4)
+--   if so,
+--     replace left part wirth regular 0 and allocate right part of explosion immediately to right element
+--     and return new right element, new left element and new explosion (with left part from exploded pair)
+--   if not so act recursively on left element and see if resuting Explosion changed
+-- then we need to check whether right part is pair of Regular Numbers and their level >=4 (current level >= 4)
+--   if so, replace right part wirth regular 0 and allocate right part of explosion immediately to left element
+--   and return new left element, new right element and new explosion (with left part from exploded pair)
+--
+explode' level (Fork l r) NoExplosion
+  | isForkOfLeafs l && level >= 4 =
+    let
+      in_e = Explosion (RPart l_leaf_r)
+      (new_r,_) = explode' (level+1) r in_e
+      up_e = Explosion (LPart l_leaf_l)
+    in (Fork (Leaf 0) new_r, up_e)
+  | new_l_expl /= NoExplosion =
+    case new_l_expl of
+      Explosion (LPart _) -> (Fork new_l r, new_l_expl)
+      Explosion (RPart _) -> explRnFork level new_l r new_l_expl
+      _ -> (Fork new_l r, new_l_expl)
+  | isForkOfLeafs r && level >= 4 =
+    let
+      in_e = Explosion (LPart r_leaf_l)
+      (new_l,_) = explode' (level+1) l in_e
+      up_e = Explosion (LPart r_leaf_r)
+    in (Fork new_l (Leaf 0), up_e)
+  | otherwise =
+    case new_r_expl of
+      Explosion (RPart _) -> (Fork l new_r, new_r_expl)
+      Explosion (LPart _) -> explLnFork level l new_r new_r_expl
+      _ -> (Fork l new_r, new_r_expl)
+
+  where
+    (Fork (Leaf l_leaf_l) (Leaf l_leaf_r)) = l
+    (Fork (Leaf r_leaf_l) (Leaf r_leaf_r)) = r
+    (new_l, new_l_expl) = explode' (level+1) l NoExplosion
+    (new_r, new_r_expl) = explode' (level+1) r NoExplosion
+    explRnFork :: Int -> Number -> Number -> Explosion -> (Number, Explosion)
+    explRnFork level l r e = (Fork new_l r, new_e)
+      where (new_l, new_e) = explode' (level+1) l e
+    explLnFork :: Int -> Number -> Number -> Explosion -> (Number, Explosion)
+    explLnFork level l r e = (Fork l new_r, new_e)
+      where (new_r, new_e) = explode' (level+1) r e
 
 isForkOfLeafs :: Number -> Bool
 isForkOfLeafs (Fork (Leaf _) (Leaf _)) = True
@@ -124,7 +176,6 @@ split n = res
   where (res, _) = split' n False
 
 split' :: Number -> Bool -> (Number, Bool)
-
 -- split leaf if nothing was split before and value is >= 10
 split' (Leaf n) False =
   if n >= 10
