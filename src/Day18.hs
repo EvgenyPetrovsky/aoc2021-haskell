@@ -33,12 +33,12 @@ newtype Input = Input [Number]
 {- Solutions -}
 
 parseInput :: [String] -> Input
-parseInput xs = Input (map parseLine xs)
+parseInput xs = Input (map readNumber xs)
 
-parseLine :: String -> Number
-parseLine (s:ss)
+readNumber :: String -> Number
+readNumber (s:ss)
   | s `elem` ['0'..'9'] = Leaf . read $ [s]
-  | s == '[' = Fork (parseLine left_part) (parseLine right_part)
+  | s == '[' = Fork (readNumber left_part) (readNumber right_part)
     where
       (left_part, rest) = splitOnSameLevel ',' ss
       (right_part, _) = splitOnSameLevel ']' (tail rest)
@@ -147,7 +147,7 @@ explode' level (Fork l r) NoExplosion
     let
       in_e = Explosion (LPart r_leaf_l)
       (new_l,_) = explode' (level+1) l in_e
-      up_e = Explosion (LPart r_leaf_r)
+      up_e = Explosion (RPart r_leaf_r)
     in (Fork new_l (Leaf 0), up_e)
   | otherwise =
     case new_r_expl of
@@ -161,11 +161,11 @@ explode' level (Fork l r) NoExplosion
     (new_l, new_l_expl) = explode' (level+1) l NoExplosion
     (new_r, new_r_expl) = explode' (level+1) r NoExplosion
     explRnFork :: Int -> Number -> Number -> Explosion -> (Number, Explosion)
-    explRnFork level l r e = (Fork new_l r, new_e)
-      where (new_l, new_e) = explode' (level+1) l e
+    explRnFork level l r e = (Fork l r1, e1)
+      where (r1, e1) = explode' (level+1) r e
     explLnFork :: Int -> Number -> Number -> Explosion -> (Number, Explosion)
-    explLnFork level l r e = (Fork l new_r, new_e)
-      where (new_r, new_e) = explode' (level+1) r e
+    explLnFork level l r e = (Fork l1 r, e1)
+      where (l1, e1) = explode' (level+1) l e
 
 isForkOfLeafs :: Number -> Bool
 isForkOfLeafs (Fork (Leaf _) (Leaf _)) = True
