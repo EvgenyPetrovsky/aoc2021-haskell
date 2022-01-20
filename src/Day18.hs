@@ -37,7 +37,7 @@ parseInput xs = Input (map readNumber xs)
 
 readNumber :: String -> Number
 readNumber (s:ss)
-  | s `elem` ['0'..'9'] = Leaf . read $ [s]
+  | s `elem` ['0'..'9'] = Leaf . read $ s:ss
   | s == '[' = Fork (readNumber left_part) (readNumber right_part)
     where
       (left_part, rest) = splitOnSameLevel ',' ss
@@ -70,8 +70,14 @@ magnitude (Leaf n) = n
 magnitude (Fork l r) = (3 * magnitude l) + (2 * magnitude r)
 
 solvePart_2 :: Solution
-solvePart_2 (Input i) =
-  error "not implemented"
+solvePart_2 (Input numbers) =
+  maximum . map add_red_mag $ cbs_all
+  where
+    cbs :: [[Number]]
+    cbs = (combinations 2 numbers)
+    cbs_all = cbs ++ reverse cbs
+    add_red_mag :: [Number] -> Int
+    add_red_mag = magnitude . foldl1 (\z x -> reduce (z `add` x))
 
 {- Supplementary functions -}
 
@@ -90,9 +96,16 @@ add = Fork
 
 {- reduce is a combination of explode and split operations -}
 reduce :: Number -> Number
-reduce n =
-  if n == n_new then n else reduce n_new
-  where n_new = split . explode $ n
+reduce n
+  | n /= n_exp = reduce n_exp
+  | n /= n_spl = reduce n_spl
+  | otherwise = n
+  where
+    n_exp = explode n
+    n_spl = split n
+--reduce n =
+--  if n == n_new then n else reduce n_new
+--  where n_new = split . explode $ n
 
 explode :: Number -> Number
 explode n = new_n
@@ -196,3 +209,11 @@ split' (Fork l r) False =
     (r1, rx) = split' r False
 -- we don't split if something has been already split
 split' n True = (n, True)
+
+-- part 2 ----------------------------------------------------------------------
+-- combinations of n elements out of list
+combinations :: Int -> [a] -> [[a]]
+combinations 0 _ = [[]]
+combinations n xs = [ xs !! i : x | i <- [0..(length xs)-1] 
+                                  , x <- combinations (n-1) (drop (i+1) xs) ]
+                                  
