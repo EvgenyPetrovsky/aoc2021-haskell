@@ -71,13 +71,12 @@ magnitude (Fork l r) = (3 * magnitude l) + (2 * magnitude r)
 
 solvePart_2 :: Solution
 solvePart_2 (Input numbers) =
-  maximum . map add_red_mag $ cbs_all
+  maximum . map add_red_mag $ pairs
   where
-    cbs :: [[Number]]
-    cbs = (combinations 2 numbers)
-    cbs_all = cbs ++ reverse cbs
-    add_red_mag :: [Number] -> Int
-    add_red_mag = magnitude . foldl1 (\z x -> reduce (z `add` x))
+    pairs :: [(Number, Number)]
+    pairs = [(a,b) | a <- numbers, b <- numbers, a /= b]
+    add_red_mag :: (Number, Number) -> Int
+    add_red_mag (a,b) = magnitude . reduce $ a `add` b
 
 {- Supplementary functions -}
 
@@ -209,11 +208,4 @@ split' (Fork l r) False =
     (r1, rx) = split' r False
 -- we don't split if something has been already split
 split' n True = (n, True)
-
--- part 2 ----------------------------------------------------------------------
--- combinations of n elements out of list
-combinations :: Int -> [a] -> [[a]]
-combinations 0 _ = [[]]
-combinations n xs = [ xs !! i : x | i <- [0..(length xs)-1] 
-                                  , x <- combinations (n-1) (drop (i+1) xs) ]
                                   
