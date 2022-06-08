@@ -18,8 +18,23 @@ type Scanner = BeaconMap
 type BeaconMap = [Coordinate]
 type Coordinate = (Int, Int, Int)
 
-isNeighbourScanner :: Scanner -> Scanner -> Boolean
+{-
+The approach
+1. for every scanner find neighbour scanners in 1 to 1 comparisons
 
+
+-}
+
+-- axes positions: x -> right; y -> up; z -> towards 
+-- all rotations are done counterclockwise looking from the top of axis
+rotateAlongX :: Coordinate -> Coordinate
+rotateAlongX (x,y,z) = (x,-z,y)
+rotateAlongY :: Coordinate -> Coordinate
+rotateAlongY (x,y,z) = (z,y,-x)
+rotateAlongZ :: Coordinate -> Coordinate
+rotateAlongZ (x,y,z) = (-y,x,z)
+
+isNeighbourScanner :: Scanner -> Scanner -> Boolean
 
 rotateCoordinates :: Coordinate -> [Coordinate]
 rotateCoordinates (x, y, z) =
