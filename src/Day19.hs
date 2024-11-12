@@ -1,4 +1,4 @@
-module DayXX_template (
+module Day19 (
   dayNo,
   part1,
   part2
@@ -25,7 +25,7 @@ The approach
 
 -}
 
--- axes positions: x -> right; y -> up; z -> towards 
+-- axes positions: x -> right; y -> up; z -> towards
 -- all rotations are done counterclockwise looking from the top of axis
 rotateAlongX :: Coordinate -> Coordinate
 rotateAlongX (x,y,z) = (x,-z,y)
@@ -34,16 +34,17 @@ rotateAlongY (x,y,z) = (z,y,-x)
 rotateAlongZ :: Coordinate -> Coordinate
 rotateAlongZ (x,y,z) = (-y,x,z)
 
-isNeighbourScanner :: Scanner -> Scanner -> Boolean
+isNeighbourScanner :: Scanner -> Scanner -> Bool
+isNeighbourScanner s1 s2 = error "not implemented"
 
 rotateCoordinates :: Coordinate -> [Coordinate]
 rotateCoordinates (x, y, z) =
   -- first 4 - rotation around Z, last 2 - rotation around X
   concatMap rotate_around_y xs_rotations
-  xz_rotations = ( x, y, z):(-y, x, z):(-x,-y, z):( y,-x, z):( x, z, -y):( x, -z, y):[]
-  where 
+  where
     rotate_around_y :: Coordinate -> [Coordinate]
     rotate_around_y ( x, y, z) = ( z, y,-x):( z, y,-x):(-x, y,-z):(-z, y, x):[]
+    xs_rotations = ( x, y, z):(-y, x, z):(-x,-y, z):( y,-x, z):( x, z, -y):( x, -z, y):[]
 
 printPartN :: Solution -> IO ()
 printPartN solution = do
